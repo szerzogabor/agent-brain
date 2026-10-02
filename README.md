@@ -26,6 +26,7 @@ templates/   starting points for new skills and personas
 | [design-docs](skills/design-docs/SKILL.md) | ADR/design-doc structure: context, options, decision, consequences |
 | [docs-writing](skills/docs-writing/SKILL.md) | Audience-first docs with verified, copy-pasteable examples |
 | [changelog](skills/changelog/SKILL.md) | Keep a Changelog format, user-facing language, breaking-change flags |
+| [google-play-app-setup](skills/google-play-app-setup/SKILL.md) | New app in Play Console: target-SDK/CI readiness, package name, privacy hosting, identity hygiene, App content answers, store listing |
 | [google-play-release](skills/google-play-release/SKILL.md) | Play Console end to end: BILLING build, upload key, service account, automated .aab upload, in-app products via API |
 
 ## Personas

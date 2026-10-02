@@ -11,7 +11,7 @@ Get an app from "a project that builds" to "a build on a Play testing track that
 
 - In-app products are missing or can't be created, or the user asks for "purchase settings" in Play Console.
 - Wiring a CI job or build machine to upload bundles to a Play track.
-- Not for store-listing copy or content-rating questionnaires. Those are forms the human fills in.
+- Not for creating the app, its store listing or the App content declarations (Data safety, content rating…): use [google-play-app-setup](../google-play-app-setup/SKILL.md) first.
 
 ## Process
 
