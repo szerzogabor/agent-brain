@@ -23,7 +23,7 @@ Get an app from "a project that builds" to "a build on a Play testing track that
 6. **Billing in the build.** Add the platform's Play Billing library or plugin. Then verify on the built .aab that the base manifest requests `com.android.vending.BILLING`. Play refuses to create products until a bundle with that permission has been uploaded to any track.
 7. **Upload** through the Edits API: insert edit → upload bundle → update track → commit, and delete the edit on any failure. Use a version code above every code Play already has. Start on the internal track; never-published apps may only accept `draft` releases.
 8. **Create products** from the project's product catalogue: one-time products with one legacy-compatible buy option, prices converted per region by Play's converter, then activate them. Run a dry run first and show the user the resulting prices.
-9. **Testing.** Add the user's accounts under Settings → License testing, install from the testing track (not a sideload), and buy one product of each kind.
+9. **Testing.** Add the user's accounts under Settings → License testing (account-wide; open it first, the list may already be selected), install from the testing track (not a sideload), and buy one product of each kind. Licence testers pay with Play's test instruments, never real money. See "License testing" in the reference.
 10. **Verify** each stage against Play itself (track listing, product listing), not against your script's exit code.
 
 ## Output format

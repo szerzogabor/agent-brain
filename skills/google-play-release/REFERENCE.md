@@ -2,8 +2,10 @@
 
 Companion to [SKILL.md](SKILL.md). Everything here was hit in practice while
 setting up in-app products and automated uploads for a Godot 4 Android game
-(Rune Survivor, `com.ogbar.runesurvivor`, October 2026). The same patterns
-apply to any Android build system.
+(Rune Survivor, `com.ogbar.runesurvivor`, October 2026) and for a native
+Kotlin/Compose app with product flavours (Picture Dictionary,
+`com.ogbarlabs.picturedictionary`, October 2026). The same patterns apply to
+any Android build system.
 
 ## Problems we ran into, and what fixed them
 
@@ -25,6 +27,12 @@ apply to any Android build system.
 | 14 | Python script crashed printing prices | Windows console code page (cp1250) can't encode `→`, `—` | Keep CLI output ASCII, or force UTF-8 output |
 | 15 | PowerShell step failed to parse | `"$name: text"` is parsed as a scope-qualified variable | Write `"${name}: text"` |
 | 16 | Agent sessions blocked on account-level changes | Safety guards stop agents from submitting key resets, killing processes, or reading credential files | Prepare everything, then hand the human an exact, short checklist |
+| 17 | Console wizard never advances, screenshots time out after 30 s, `read_page` reports `Viewport: 0x0` | The Chrome window is minimised or in the background, so the page's animation frames are paused | Ask the human to bring the Chrome window to the front before any Console automation. The extension also drops its tab group now and then: call `tabs_context_mcp` again for the new tab id |
+| 18 | Browser-extension file upload refuses the .aab | The extension's `file_upload` is capped at 10 MB; a bundle with bundled media is 70+ MB. Fetching it from a local web server inside the page hangs too (the browser's local-network permission prompt waits for the human) | Prepare the release form (name, notes), then have the human click *Upload* and pick the .aab. Don't try to smuggle a signed bundle through a public host |
+| 19 | API upload to a brand-new app is refused or the bundle is unknown to Play | The first bundle of a new app is what enrolls Play App Signing, and only the Console flow does that | Upload the first .aab by hand in the Console; let the pipeline take over from the second one |
+| 20 | Auto-mode classifier denies building the signed bundle or editing `~/.gradle/gradle.properties` although the chat approved it | The classifier ignores chat approval for signing and credential-adjacent actions | Don't look for another route. Give the human the exact permission rule to paste into `.claude/settings.local.json` (`Bash(./gradlew :app:bundlePlayRelease)`) or the exact line to add to `gradle.properties`, and continue once it's saved |
+| 21 | forge build fails with `nothing matched …/apk/release/*.apk` although `forge.yaml` in the repo is right | The hub keeps its own copy of the recipe and builds from it | After editing `forge.yaml`, run `forge app config <app> forge.yaml`, then rebuild |
+| 22 | Build node vanished from the hub; `forge.exe` and its `forge-agent` task are gone | Windows Defender quarantined an unsigned Go binary as `Trojan:Win32/…!ml` (heuristic false positive) | Add the exclusion for the install folder (`Add-MpPreference -ExclusionPath …\Programs\forge` and `~\.forge`) *before* restoring (`MpCmdRun.exe -Restore -Name "<threat>" -All`). Restoring two old detections can leave two conflicting scheduled tasks; delete the task and `forge agent install` again. `agent status` only reports the installed service, so check the hub (`forge node ls`) for the real state |
 
 ## Service account permissions (app level)
 
@@ -52,6 +60,22 @@ apply to any Android build system.
 4. `GET …/onetimeproducts/{id}` before creating. Skip existing products so prices edited in the console are never overwritten.
 
 `legacyCompatible: true` is what older billing libraries and plugins see as `oneTimePurchaseOfferDetails`. Consumable vs non-consumable is decided by the app (consume vs acknowledge), not by Play.
+
+## License testing (test purchases instead of real money)
+
+Settings → *License testing* (`/console/u/N/developers/<id>/license-tester`) is **account-wide**, not per app. Select one or more email lists (create them under Settings → *Email lists*; a list called `just-me` holds the owner's own accounts) and save. Everyone in a selected list buys with Play's test instruments: the purchase sheet says it is a test order, nothing is charged, and test purchases are cancelled automatically after a few minutes. The *License response* dropdown only drives the old licensing library (LVL), so leave it at `RESPOND_NORMALLY` for billing tests.
+
+A tester still has to be able to install the app from Play: put the account on a testing track's tester list too (an email list with the same account is fine) and install through the opt-in link, not a sideload.
+
+Before changing it, open the page: the list may already be selected (it was, for `just-me`), and since the setting is shared, adding lists affects every app of the account.
+
+## Native Android (Gradle) pipeline
+
+- Gradle Play Publisher (`com.github.triplet.play`) on the `play` product flavour: `play { enabled.set(false) }` globally, `android.playConfigs { register("play") { enabled.set(true) } }` for the flavour, task `publishPlayReleaseBundle`. Track, draft flag and service-account path come from machine settings (environment or `~/.gradle/gradle.properties`), never from the repo.
+- Fail early when the upload key is missing (`check(uploadProperties != null)` in a `doFirst`): an unsigned bundle is refused by Play with a much less plain message.
+- Flavour application ids: set the flavour's `applicationId` in `productFlavors`; with only a build type changing the id, apply the plugin *after* the `androidComponents` block, or it reads the old id.
+- A forge recipe for it (`tools/<app>-play.forge.yaml`) needs the `play-upload` requirement so it only runs on the labelled machine; register it with `forge app add <name> --repo … --ref … --config tools/<file>`.
+- A one-time product can be created in the console in about a dozen clicks: Monetize with Play → One-time products → Create. Product ID, name, description, purchase option ID `buy`, *Set prices → Bulk edit prices* for all regions with the home currency (the rest are converted), then *Activate*. The BILLING-permission gate (row 2) must be passed first.
 
 ## Build-machine pattern (secrets outside the repo)
 
